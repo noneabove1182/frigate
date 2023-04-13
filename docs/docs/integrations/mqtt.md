@@ -158,3 +158,7 @@ Topic to adjust motion contour area for a camera. Expected value is an integer.
 ### `frigate/<camera_name>/motion_contour_area/state`
 
 Topic with current motion contour area for a camera. Published value is an integer.
+
+### `frigate/<camera_name>/online/state`
+
+Topic with current state of online for a camera. Published values are `ON` and `OFF`.

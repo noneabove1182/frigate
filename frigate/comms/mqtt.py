@@ -77,6 +77,11 @@ class MqttClient(Communicator):  # type: ignore[misc]
                 retain=True,
             )
             self.publish(
+                f"{camera_name}/online/state",
+                "ON" if camera.online.enabled else "OFF",
+                retain=True,
+            )
+            self.publish(
                 f"{camera_name}/motion",
                 "OFF",
                 retain=False,
@@ -150,6 +155,7 @@ class MqttClient(Communicator):  # type: ignore[misc]
             "improve_contrast",
             "motion_threshold",
             "motion_contour_area",
+            "online",
         ]
 
         for name in self.config.cameras.keys():

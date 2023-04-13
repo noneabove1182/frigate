@@ -289,6 +289,9 @@ class FilterConfig(FrigateBaseModel):
         title="Detection area polygon mask for this filter configuration.",
     )
 
+class OnlineConfig(FrigateBaseModel):
+    enabled: bool = Field(default=True, title="Camera enabled.")
+
 
 class RuntimeFilterConfig(FilterConfig):
     mask: Optional[np.ndarray]
@@ -575,7 +578,9 @@ class CameraUiConfig(FrigateBaseModel):
 
 class CameraConfig(FrigateBaseModel):
     name: Optional[str] = Field(title="Camera name.", regex=REGEX_CAMERA_NAME)
-    enabled: bool = Field(default=True, title="Enable camera.")
+    online: OnlineConfig = Field(
+        default_factory=OnlineConfig, title="Camera online configuration."
+    )
     ffmpeg: CameraFfmpegConfig = Field(title="FFmpeg configuration for the camera.")
     best_image_timeout: int = Field(
         default=60,

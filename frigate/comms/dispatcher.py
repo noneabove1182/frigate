@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from frigate.config import FrigateConfig
 from frigate.types import CameraMetricsTypes
 from frigate.util import restart_frigate
+from frigate.app import FrigateApp
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class Dispatcher:
 
     def __init__(
         self,
+        app: FrigateApp,
         config: FrigateConfig,
         camera_metrics: dict[str, CameraMetricsTypes],
         communicators: list[Communicator],
@@ -57,6 +59,7 @@ class Dispatcher:
             "motion_threshold": self._on_motion_threshold_command,
             "recordings": self._on_recordings_command,
             "snapshots": self._on_snapshots_command,
+            "online" : self._on_online_command,
         }
 
     def _receive(self, topic: str, payload: str) -> None:
@@ -80,6 +83,25 @@ class Dispatcher:
     def stop(self) -> None:
         for comm in self.comms:
             comm.stop()
+
+    def _on_online_command(self, camera_name: str, payload: str) -> None:
+        """Callback for enabling camera."""
+        camera_online_settings = self.config.cameras[camera_name].online
+
+        if payload == "ON":
+            if not self.camera_metrics[camera_name]["camera_enabled"].value:
+                logger.info(f"Enabling camera {camera_name}")
+                self.camera_metrics[camera_name]["camera_enabled"].value = True
+                camera_online_settings.enabled = True
+                app.start_camera_processors()
+                app.start_camera_capture_processes()
+        elif payload == "OFF":
+            if self.camera_metrics[camera_name]["camera_enabled"].value:
+                logger.info(f"Disabling camera {camera_name}")
+                self.camera_metrics[camera_name]["camera_enabled"].value = False
+                camera_online_settings.enabled = False
+
+        self.publish(f"{camera_name}/online/state", payload, retain=True)
 
     def _on_detect_command(self, camera_name: str, payload: str) -> None:
         """Callback for detect topic."""

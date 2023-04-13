@@ -86,6 +86,9 @@ class FrigateApp:
                 "camera_fps": mp.Value("d", 0.0),
                 "skipped_fps": mp.Value("d", 0.0),
                 "process_fps": mp.Value("d", 0.0),
+                "camera_enabled": mp.Value(
+                    "i", self.config.cameras[camera_name].online.enabled
+                ),
                 "detection_enabled": mp.Value(
                     "i", self.config.cameras[camera_name].detect.enabled
                 ),
@@ -179,7 +182,7 @@ class FrigateApp:
             comms.append(MqttClient(self.config))
 
         comms.append(WebSocketClient(self.config))
-        self.dispatcher = Dispatcher(self.config, self.camera_metrics, comms)
+        self.dispatcher = Dispatcher(self, self.config, self.camera_metrics, comms)
 
     def start_detectors(self) -> None:
         for name in self.config.cameras.keys():
@@ -247,8 +250,11 @@ class FrigateApp:
 
     def start_camera_processors(self) -> None:
         for name, config in self.config.cameras.items():
-            if not self.config.cameras[name].enabled:
+            if not self.config.cameras[name].online.enabled:
                 logger.info(f"Camera processor not started for disabled camera {name}")
+                continue
+            if self.config.cameras[name]["process"]:
+                logger.info(f"Skipping started processor")
                 continue
 
             camera_process = mp.Process(
@@ -272,8 +278,11 @@ class FrigateApp:
 
     def start_camera_capture_processes(self) -> None:
         for name, config in self.config.cameras.items():
-            if not self.config.cameras[name].enabled:
+            if not self.config.cameras[name].online.enabled:
                 logger.info(f"Capture process not started for disabled camera {name}")
+                continue
+            if self.config.cameras[name]["capture_process"]:
+                logger.info(f"Skipping started process")
                 continue
 
             capture_process = mp.Process(
